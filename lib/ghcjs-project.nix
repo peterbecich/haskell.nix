@@ -52,6 +52,8 @@
     '';
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
   }
+, overrideBootPackages ? []
+, patches ? []
 , ...
 }@args:
 let
@@ -87,7 +89,7 @@ let
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {
         buildInputs = configureInputs;
-        inherit src;
+        inherit src patches;
         } ''
         export HOME=$(pwd)
         mkdir $HOME/.cabal
@@ -95,6 +97,11 @@ let
         cp -r "$src" "$out"
         chmod -R +w "$out"
         cd "$out"
+
+        for p in $patches
+        do
+          patch -p1 <$p
+        done
 
         # TODO: Find a better way to avoid impure version numbers
         sed -i 's/RELEASE=NO/RELEASE=YES/' ghc/configure.ac
@@ -128,13 +135,30 @@ let
         for a in integer-gmp base unix; do
           cp ${../overlays/patches/config.sub} lib/boot/pkg/$a/config.sub
         done
+
+        ${ # it just so happens that all existing uses of overriding boot packages
+           # need to be installed right after template-haskell
+           # if at some point we would need to insert them at different points
+           # then we will have gto come up with something more clever
+          builtins.concatStringsSep "\n" (map ({name, src}: ''
+            rm -rf $out/lib/boot/pkg/${name}
+            cp -r ${src} $out/lib/boot/pkg/${name}
+            sed -i 's/^    - ${name}$//g' $out/lib/boot/boot.yaml
+            sed -i 's/^    - template-haskell$/    - template-haskell\n    - ${name}/g' $out/lib/boot/boot.yaml
+            echo "Added ${name} to boot.yaml"
+            ''
+          ) (pkgs.lib.reverseList overrideBootPackages))
+        }
+
+        chmod -R +w $out/lib/boot/pkg
         '';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (
         (pkgs.lib.filterAttrs 
             (n: _: !(builtins.any (x: x == n)
-                ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"])) args) // {
+                [ "src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install" 
+                  "overrideBootPackages" "patches"])) args) // {
         src = configured-src;
         index-state = "2021-03-20T00:00:00Z";
         inherit compiler-nix-name;
@@ -158,6 +182,7 @@ let
                 packages.Cabal.patches = [ ./../overlays/patches/Cabal/fix-data-dir.patch ];
             })
             {
+                ghcOptions = ["-O2"];
                 packages.ghcjs.doHaddock = false;
                 packages.haddock-ghcjs.doHaddock = false;
                 packages.haddock-api-ghcjs.doHaddock = false;
