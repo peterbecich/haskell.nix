@@ -1,0 +1,28 @@
+name: Rebase on iohk/haskell.nix
+
+on:
+  schedule:
+    - cron: 0 0 * * *
+
+jobs:
+  Linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.4.0
+        with:
+          fetch-depth: 0
+      - name: Rebase and push
+        run: |
+          git config --global user.name "GitHub Actions"
+
+
+          git remote add iohk https://github.com/input-output-hk/haskell.nix.git
+          git fetch iohk
+
+          git checkout iko/ghcjs-patch-master
+          git rebase iohk/master
+          git push --force
+
+          git checkout --track origin/master
+          git reset --hard iohk/master
+          git push --force
