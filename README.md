@@ -1,3 +1,19 @@
+# What is this fork?
+
+This fork contains a patched version of GHCJS 8.10 which improves performance and memory usage.
+
+For more info see this PR: https://github.com/input-output-hk/haskell.nix/pull/1306
+
+## Package versions
+
+This branch is updated every day with commits from https://github.com/input-output-hk/haskell.nix/tree/master. This means that it receives all of the updates the initial project does.
+
+## Caching
+
+Building the patched compiler itself takes around 2-3 hours. The [Typeable](https://typeable.io) public nix cache probably has a cached version of the compiler. You can follow these instruction to set it up: [app.cachix.org/organization/typeable/cache/typeable](https://app.cachix.org/organization/typeable/cache/typeable).
+
+---
+
 # `haskell.nix` is infrastructure for building Haskell packages with Nix
 
 [![](https://badge.buildkite.com/d453edcd29bd2f8f3f3b32c9b7d6777a33773d9671c37a6ccc.svg?branch=master)](https://buildkite.com/input-output-hk/haskell-dot-nix)
