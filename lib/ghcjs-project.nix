@@ -48,7 +48,7 @@
     # Cabal 3.2.1.0 no longer supports he mix of `cabal-version`,
     # lack of `custom-setup` and `v1-install` used by ghcjs boot.
     cabalProjectLocal = ''
-      constraints: Cabal <3.2.1.0
+      constraints: cabal-install <3.2.1.0
     '';
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
   }
