@@ -196,8 +196,7 @@ final: prev: {
         hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools, ... }:
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
-            { name = "hackage.haskell.org-at-${at}";
-              index = final.evalPackages.fetchurl {
+            { "hackage.haskell.org-at-${at}" = final.evalPackages.fetchurl {
                 name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
@@ -211,23 +210,22 @@ final: prev: {
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? [], ... }@args:
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
             let
-              allTarballs = [ (hackageTarball args) ] ++ extra-hackage-tarballs;
-              allNames = final.lib.concatMapStringsSep "-" (tarball: tarball.name) allTarballs;
+              allTarballs = hackageTarball args // extra-hackage-tarballs;
+              allNames = final.lib.concatStringsSep "-" (builtins.attrNames allTarballs);
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
-            in
-            # This is very big, and cheap to build: use runCommandLocal to prefer building it locally
-            final.evalPackages.runCommandLocal dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
+              # This is very big, and cheap to build: prefer building it locally
+              tarballRepos = final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; preferLocalBuild = true; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
-                  map (tarball:
+                  final.lib.mapAttrsToList (name: index:
                 ''
-                repository ${tarball.name}
-                  url: file:${mkLocalHackageRepo tarball}
+                repository ${name}
+                  url: file:${mkLocalHackageRepo { inherit name index; }}
                   secure: True
                   root-keys:
                   key-threshold: 0
@@ -238,13 +236,24 @@ final: prev: {
 
                 # All repositories must be mkdir'ed before calling new-update on any repo,
                 # otherwise it fails.
-                ${final.lib.concatStrings (map ({ name, ... }: ''
+                ${final.lib.concatStrings (map (name: ''
                   mkdir -p $out/.cabal/packages/${name}
-                '') allTarballs)}
+                '') (builtins.attrNames allTarballs))}
 
-                ${final.lib.concatStrings (map ({ name, ... }: ''
+                ${final.lib.concatStrings (map (name: ''
                   HOME=$out cabal new-update ${name}
-                '') allTarballs)}
+                '') (builtins.attrNames allTarballs))}
+              '';
+            in
+              # Add the extra-hackage-repos where we have all the files needed.
+              final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ final.evalPackages.xorg.lndir ]; } ''
+                mkdir $out
+                lndir ${tarballRepos} $out
+
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  mkdir -p $out/.cabal/packages/${name}
+                  lndir ${repo} $out/.cabal/packages/${name}
+                '') extra-hackage-repos)}
             '';
 
         # Some of features of haskell.nix rely on using a hackage index
@@ -479,14 +488,20 @@ final: prev: {
                   inherit (rev) sha256;
                 };
                 revSuffix = final.lib.optionalString (rev.revNum > 0) "-r${toString rev.revNum}";
-            in let src = final.buildPackages.pkgs.runCommand "${name}-${version'}${revSuffix}-src" { } (''
+            in let src = final.buildPackages.pkgs.runCommand "${name}-${version'}${revSuffix}-src" {} (''
                   tmp=$(mktemp -d)
                   cd $tmp
                   tar xzf ${tarball}
                   mv "${name}-${version'}" $out
                 '' + final.lib.optionalString (rev.revNum > 0) ''
                   cp ${cabalFile} $out/${name}.cabal
-                '');
+                '') // {
+                  # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
+                  # Disable filtering keeps pre ond post nix 2.4 behaviour the same.  This means that
+                  # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
+                  # that `tools` in the shell will be built the same.
+                  filterPath = { path, ... }: path;
+                };
           in cabalProject' (
             (final.haskell-nix.hackageQuirks { inherit name; version = version'; }) //
               builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
@@ -522,7 +537,7 @@ final: prev: {
                     ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
                         { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
                     ++ [ { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; } ];
-                  extra-hackages = args.extra-hackages or [];
+                  extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
 
               project = addProjectAndPackageAttrs rec {

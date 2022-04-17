@@ -80,11 +80,13 @@ with pkgs;
   opencv = [ opencv3 ];
   icuuc = [ icu ];
   icui18n = [ icu ];
+  icu-i18n = [ icu ];
   icudata = [ icu ];
   vulkan = [ vulkan-loader ];
   sodium = [ libsodium ];
   gfortran = [ gfortran.cc.lib ];
   ssh2 = [ libssh2 ];
+  gpiod = [ libgpiod ];
 }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;

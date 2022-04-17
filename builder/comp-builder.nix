@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -203,7 +203,7 @@ let
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
-      # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
+      # `--ghc-option=-optl=-L` options to the `configureFlags` of the
       # component.
       "--disable-executable-dynamic"
       "--ghc-option=-optl=-pthread"
@@ -382,18 +382,26 @@ let
       runHook postConfigure
     '';
 
-    buildPhase = if stdenv.hostPlatform.isGhcjs then ''
-      runHook preBuild
-      # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}
-      runHook postBuild
-    '' else ''
-      runHook preBuild
-      # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
-      runHook postBuild
-    ''
-    ;
+    buildPhase =
+      # It seems that by the time the iserv wrapper specifiec by `--ghc-option=-pgmi` runs
+      # all the array environment variables are removed from the environment.  To get a list
+      # of all the locations a DLLs might be present we need access to pkgsHostTarget.
+      # Adding a string version of the list array of nix store paths allows us to get that
+      # list when we need it.
+      (lib.optionalString stdenv.hostPlatform.isWindows ''
+        export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
+      '') +
+      (if stdenv.hostPlatform.isGhcjs then ''
+        runHook preBuild
+        # https://gitlab.haskell.org/ghc/ghc/issues/9221
+        $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '' else ''
+        runHook preBuild
+        # https://gitlab.haskell.org/ghc/ghc/issues/9221
+        $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '');
 
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #

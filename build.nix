@@ -24,7 +24,7 @@ in rec {
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" "latest";
-    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc901" "ghc902" "ghc921"]) {
+    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]) {
       hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
       hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
     })
@@ -68,7 +68,11 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {};
+    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {
+      # TODO remove this when nixpkgs-2205 is released and used for `pkgs`
+      # check-path-support fails unless we have nix 2.4 or newer.
+      inherit (import haskellNix.sources.nixpkgs-unstable {}) nix;
+    };
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra

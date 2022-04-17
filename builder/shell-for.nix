@@ -96,13 +96,14 @@ let
   component = {
     depends = packageInputs;
     libs = [];
+    pkgconfig = [];
     frameworks = [];
     doExactConfig = false;
   };
   configFiles = makeConfigFiles {
     fullName = args.name or name;
     identifier.name = name;
-    inherit component;
+    inherit component enableDWARF;
     chooseDrv = p: if withHaddock && p ? haddock then p.haddock else p;
   };
   ghcEnv = ghcForComponent {
