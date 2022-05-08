@@ -307,6 +307,8 @@ let
   };
 
   drv = stdenv.mkDerivation (commonAttrs // {
+    __structuredAttrs = true;
+
     pname = nameOnly;
     inherit (package.identifier) version;
 
