@@ -21,6 +21,7 @@ let
           then [
             ./patches/810/fast-weak.patch 
             ./patches/810/boot-optimization-flags.patch
+            ./patches/810/issue-18708.patch
             ] 
           else [];
 #        plan-sha256 = "1wy2lr08maxyi7r8jiwf2gj6pdayk5vxxwh42bj4s2gg4035z0yc";
