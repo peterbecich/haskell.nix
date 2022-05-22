@@ -9,6 +9,23 @@ let
 in { haskell-nix = prev.haskell-nix // {
 
   hackageQuirks = { name, version }: {
+    # FIXME: this is required to build cabal-install 3.2 with ghc 8.6,
+    # but also for
+    # https://github.com/input-output-hk/haskell.nix/issues/422
+    cabal-install = {
+      cabalProject = ''
+        packages: .
+        allow-newer: cabal-install:base, *:base, *:template-haskell
+      '';
+      modules = [
+        { reinstallableLibGhc = true; }
+        # Version of of cabal-install in hackage is broken for GHC 8.10.1
+        (lib.optionalAttrs (version == "3.2.0.0") {
+          packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
+        })
+      ];
+    };
+
     hpack = {
       modules = [ { reinstallableLibGhc = true; } ];
     };
