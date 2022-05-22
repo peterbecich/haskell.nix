@@ -20,7 +20,7 @@ in { haskell-nix = prev.haskell-nix // {
       modules = [
         { reinstallableLibGhc = true; }
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
-        (lib.optionalAttrs (version == "3.2.0.0") {
+        (lib.optionalAttrs (version == "3.4.1.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
         })
       ];
