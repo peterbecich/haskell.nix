@@ -131,6 +131,7 @@
           buildInputs = [
             nixUnstable
             cabal-install
+            ormolu
             haskell-nix.compiler.${compiler}
             haskell-nix.nix-tools.${compiler}
           ];
