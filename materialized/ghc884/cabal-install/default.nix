@@ -20,12 +20,13 @@
         "ed25519".flags.test-doctests = true;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
         "base64-bytestring".revision = (((hackage."base64-bytestring")."1.2.1.0").revisions).default;
-        "network".revision = (((hackage."network")."3.1.2.5").revisions).default;
+        "network".revision = (((hackage."network")."3.1.2.7").revisions).default;
         "network".flags.devel = false;
         "resolv".revision = (((hackage."resolv")."0.1.2.0").revisions).default;
+        "Cabal-syntax".revision = (((hackage."Cabal-syntax")."3.6.0.0").revisions).default;
         "echo".revision = (((hackage."echo")."0.1.4").revisions).default;
         "echo".flags.example = false;
-        "Cabal".revision = (((hackage."Cabal")."3.6.2.0").revisions).default;
+        "Cabal".revision = (((hackage."Cabal")."3.6.3.0").revisions).default;
         "Cabal".flags.bundled-binary-generic = false;
         "cryptohash-sha256".revision = (((hackage."cryptohash-sha256")."0.11.102.1").revisions).default;
         "cryptohash-sha256".flags.exe = false;
@@ -35,7 +36,7 @@
         "bytestring".revision = (((hackage."bytestring")."0.10.10.1").revisions).default;
         "lukko".revision = (((hackage."lukko")."0.1.1.3").revisions).default;
         "lukko".flags.ofd-locking = true;
-        "zlib".revision = (((hackage."zlib")."0.6.2.3").revisions).default;
+        "zlib".revision = (((hackage."zlib")."0.6.3.0").revisions).default;
         "zlib".flags.non-blocking-ffi = false;
         "zlib".flags.bundled-c-zlib = false;
         "zlib".flags.pkg-config = false;
@@ -53,8 +54,9 @@
         "time".revision = (((hackage."time")."1.9.3").revisions).default;
         "async".revision = (((hackage."async")."2.2.4").revisions).default;
         "async".flags.bench = false;
-        "random".revision = (((hackage."random")."1.2.1").revisions).default;
-        "hackage-security".revision = (((hackage."hackage-security")."0.6.0.1").revisions).default;
+        "random".revision = (((hackage."random")."1.2.1.1").revisions).default;
+        "hackage-security".revision = (((hackage."hackage-security")."0.6.2.1").revisions).default;
+        "hackage-security".flags.cabal-syntax = false;
         "hackage-security".flags.base48 = true;
         "hackage-security".flags.lukko = true;
         "hackage-security".flags.use-network-uri = true;
@@ -62,7 +64,7 @@
         "hackage-security".flags.mtl21 = false;
         "process".revision = (((hackage."process")."1.6.9.0").revisions).default;
         "base16-bytestring".revision = (((hackage."base16-bytestring")."1.0.2.0").revisions).default;
-        "regex-base".revision = (((hackage."regex-base")."0.94.0.1").revisions).default;
+        "regex-base".revision = (((hackage."regex-base")."0.94.0.2").revisions).default;
         "hsc2hs".revision = (((hackage."hsc2hs")."0.68.8").revisions).default;
         "hsc2hs".flags.in-ghc-tree = false;
         "directory".revision = (((hackage."directory")."1.3.6.0").revisions).default;
@@ -128,6 +130,7 @@
     ({ lib, ... }:
       {
         packages = {
+          "Cabal-syntax".components.library.planned = lib.mkOverride 900 true;
           "base16-bytestring".components.library.planned = lib.mkOverride 900 true;
           "echo".components.library.planned = lib.mkOverride 900 true;
           "filepath".components.library.planned = lib.mkOverride 900 true;
