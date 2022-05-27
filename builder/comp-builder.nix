@@ -360,8 +360,8 @@ let
         ++ map haskellLib.dependToLib component.depends);
 
     buildInputs = lib.optionals (!stdenv.hostPlatform.isWindows)
-      (lib.flatten component.libs
-      ++ map haskellLib.dependToLib component.depends);
+      (lib.unique (lib.flatten component.libs
+        ++ map haskellLib.dependToLib component.depends));
 
     nativeBuildInputs =
       [shellWrappers buildPackages.removeReferencesTo]
